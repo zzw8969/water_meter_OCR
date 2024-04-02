@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>缺陷文字提取服务</title>
+<style>
+  .container {
+    display: flex;
+    margin-top: 20px;
+  }
+  .image-container {
+    flex: 1;
+  }
+  .data-container {
+    flex: 1;
+    padding-left: 20px;
+  }
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+</style>
+<script>
+async function onFileSelect(event) {
+    try {
+        const filesSelected = event.target.files;
+        if (filesSelected.length > 0) {
+            const fileReader = new FileReader();
+            fileReader.onload = async (fileLoadEvent) => {
+                let imageDataUrl = fileLoadEvent.target.result;
+                let newImage = document.createElement('img');
+                newImage.src = imageDataUrl;
+                newImage.alt = '上传的图片'; // 为辅助功能添加替代文本。
+
+                const imageContainer = document.getElementById('imgTest');
+                imageContainer.innerHTML = '';
+                imageContainer.appendChild(newImage);
+
+                await sendImage(imageDataUrl);
+            };
+            fileReader.readAsDataURL(filesSelected[0]);
+        }
+    } catch (error) {
+        console.error('读取文件或发送图片失败:', error);
+    }
+}
+
+async function sendImage(imageDataUrl) {
+    try {
+        const apiEndpoint = "/rec";
+        const response = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json;charset=UTF-8',
+            },
+            body: JSON.stringify({
+                img: imageDataUrl.split(',')[1] // 移除数据 URL 前缀仅发送 base64 字符串。
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP 错误状态: ${response.status}`);
+        }
+
+        const jsonResponse = await response.json();
+        const dataContainer = document.getElementById('resultData');
+        jsonResponse.forEach(function (item){
+            var linebreak = document.createElement("br");
+            dataContainer.appendChild(linebreak);
+            dataContainer.appendChild(document.createTextNode(item))
+        })
+
+    } catch (error) {
+        console.error('发送或接收数据失败:', error);
+    }
+}
+</script>
+</head>
+<body>
+
+<form onsubmit="event.preventDefault();">
+  <input id="inputFileToLoad" type="file" onchange="onFileSelect(event)" />
+</form>
+
+<div class="container">
+  <div class="image-container" id="imgTest"></div>
+  <div class="data-container" id="resultData"></div>
+</div>
+
+</body>
+</html>

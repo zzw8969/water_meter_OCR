@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>图片提交表单</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f5f5;
+            margin: 0;
+            padding: 0;
+        }
+
+        form {
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        #inputFileToLoad {
+            display: none;
+        }
+
+        label {
+            background-color: #3498db;
+            color: #fff;
+            padding: 10px 20px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+
+        .container {
+            display: flex;
+            margin: 20px auto;
+            max-width: 800px;
+            background-color: #fff;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .image-container,
+        .data-container {
+            flex: 1;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+
+        #resultData {
+            font-size: 18px;
+            color: #333;
+        }
+    </style>
+    <script>
+        // Your JavaScript code remains unchanged
+        async function onFileSelect(event) {
+    try {
+        const filesSelected = event.target.files;
+        if (filesSelected.length > 0) {
+            const fileReader = new FileReader();
+            fileReader.onload = async (fileLoadEvent) => {
+                let imageDataUrl = fileLoadEvent.target.result;
+                let newImage = document.createElement('img');
+                newImage.src = imageDataUrl;
+                newImage.alt = '上传的图片'; // 为辅助功能添加替代文本。
+
+                const imageContainer = document.getElementById('imgTest');
+                imageContainer.innerHTML = '';
+                imageContainer.appendChild(newImage);
+
+                await sendImage(imageDataUrl);
+            };
+            fileReader.readAsDataURL(filesSelected[0]);
+        }
+    } catch (error) {
+        console.error('读取文件或发送图片失败:', error);
+    }
+}
+
+async function sendImage(imageDataUrl) {
+    try {
+        const apiEndpoint = "/rec";
+        const response = await fetch(apiEndpoint, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json;charset=UTF-8',
+            },
+            body: JSON.stringify({
+                img: imageDataUrl.split(',')[1] // 移除数据 URL 前缀仅发送 base64 字符串。
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP 错误状态: ${response.status}`);
+        }
+
+        const jsonResponse = await response.json();
+        // const roadName = jsonResponse["路名"];
+        // const distance = jsonResponse["距起点距离"];
+        const dataContainer = document.getElementById('resultData');
+        // dataContainer.innerHTML = `路名: ${roadName}<br>距起点距离: ${distance}`;
+        dataContainer.innerHTML = `${jsonResponse}`;
+
+    } catch (error) {
+        console.error('发送或接收数据失败:', error);
+    }
+}
+    </script>
+</head>
+
+<body>
+
+    <form onsubmit="event.preventDefault();">
+        <label for="inputFileToLoad">选择图片</label>
+        <input id="inputFileToLoad" type="file" onchange="onFileSelect(event)" />
+    </form>
+
+    <div class="container">
+        <div class="image-container" id="imgTest"></div>
+        <div class="data-container" id="resultData"></div>
+    </div>
+
+</body>
+
+</html>
